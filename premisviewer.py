@@ -9,7 +9,7 @@ def get_representation_info():
     parser      = ET.XMLParser(remove_blank_text=True)
     doc         = ET.parse(sys.argv[1],parser=parser)
     premis      = doc.getroot()
-    print '**Representation Level **\n'
+    print '**Summary Report **\n'
     premis_namespace    = "http://www.loc.gov/premis/v3"
     # some hacks in here for incorrectly formatted premis xml :((
     if premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].text =='representation':
@@ -20,7 +20,7 @@ def get_representation_info():
             # hack for invalid premis docs that I'd previously created :(
             if source_id == None:
                 source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-            print " %-*s   %s" % (25,'has source', source_id)
+            print "%-*s   : %s" % (25,'has source', source_id)
         included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
         included_count = len (included_files)
         format_list = []
@@ -42,11 +42,9 @@ def get_representation_info():
                 root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
                 if root_uuid == None:
                     root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                print "%-*s   %s" % (25,'image sequence root uuid',root_uuid)
+                print "%-*s   : %s" % (25,'image sequence root uuid',root_uuid)
                 file_format =  premis.xpath("//ns:formatName[../../../..//ns:objectIdentifierValue='%s' ]" % root_uuid,namespaces={'ns': premis_namespace})
                 image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
-
-                print "%-*s   %s" % (25,'image sequence format', file_format[0].text)
 
 
 def list_agents():
@@ -77,12 +75,12 @@ def list_events(agent_dict):
     print '\n**Events**\n'
     for i in all_events:
 
-         print " %-*s   %s" % (25,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
-         print " %-*s   %s" % (25,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
-         print " %-*s   %s" % (25,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (25,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (25,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (25,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
          counter = 1
          for x in i.findall('ns:linkingAgentIdentifier/ns:linkingAgentIdentifierValue',namespaces={'ns': premis_namespace}):
-             print " %-*s   %s" % (25,'agentName',  agent_dict[x.text])
+             print "%-*s   : %s" % (25,'agentName',  agent_dict[x.text])
          print '\n'
 
     return event_dict
@@ -96,10 +94,10 @@ def print_agents(event_dict):
     print '\n**Agents**\n'
     for i in all_agents:
 
-        print " %-*s   %s" % (25,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
-        print " %-*s   %s" % (25,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
+        print "%-*s   : %s" % (25,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
+        print "%-*s   : %s" % (25,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
         for x in i.findall('ns:linkingEventIdentifier/ns:linkingEventIdentifierValue',namespaces={'ns': premis_namespace}):
-             print " %-*s   %s" % (25,'eventName',  event_dict[x.text])
+             print "%-*s   : %s" % (25,'eventName',  event_dict[x.text])
         print '\n'
 
 def main():
