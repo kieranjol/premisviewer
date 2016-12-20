@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import lxml.etree as ET
 import sys
 import os
@@ -103,33 +104,47 @@ def print_agents(event_dict, input):
 
 def find_premis(input):
     xml_list = []
-    for root, dirs, files in os.walk(input):
-        for filename in files:
-            if filename.endswith('.xml'):
-                parser      = ET.XMLParser(remove_blank_text=True)
-                print os.path.join(root,filename)
-                try:
-                    doc         = ET.parse(os.path.join(root,filename), parser=parser)
-                
-                    cpl_namespace = doc.xpath('namespace-uri(.)')
-                
+    if os.path.isfile(input):
+        return input
+    else:
+        for root, dirs, files in os.walk(input):
+            for filename in files:
+                if filename.endswith('.xml'):
+                    parser      = ET.XMLParser(remove_blank_text=True)
+                    try:
+                        doc         = ET.parse(os.path.join(root,filename), parser=parser)
+                        cpl_namespace = doc.xpath('namespace-uri(.)')
+                        if cpl_namespace == "http://www.loc.gov/premis/v3":
+                            xml_list.append(os.path.join(root,filename))
+                    except: SyntaxError,TypeError
+        if len(xml_list) == 0:
+            print 'No PREMIS version 3 XML documents found. Exiting.'
+            sys.exit()
+        elif len(xml_list) == 1:
+            print 'returning', os.path.join(root, filename)
+            return os.path.join(root, filename)
 
-                    if cpl_namespace == "http://www.loc.gov/premis/v3":
-                
-                        xml_list.append(os.path.join(root,filename))
-                except: SyntaxError,TypeError
-    if len(xml_list) == 0:
-        print 'No PREMIS version 3 XML documents found. Exiting.'
-        sys.exit()
-    elif len(xml_list) == 1:
-        print 'returning', os.path.join(root, filename)
-        return os.path.join(root, filename)
-        
-    elif len(xml_list) > 1:
-        print 'Multiple PREMIS XML documents found:'
-        for i in xml_list:
-            print i
-            return xml_list[1]
+        elif len(xml_list) > 1:
+            try:
+                chosen_xml = choose_xml(xml_list)
+            except NameError:
+                print 'Enter a number!!'
+                chosen_xml = choose_xml(xml_list)
+            return chosen_xml
+
+def choose_xml(xml_list):
+    xml_number = 1
+    chosen_xml = ''
+    print '\nMultiple PREMIS XML documents found:'
+    for i in xml_list:
+        print xml_number,  os.path.basename(i)
+        xml_number += 1
+    print '\nPlease select which PREMIS XML document that you would like to process by entering the corresponding number and pressing ENTER'
+    chosen_xml = input()
+    print type(chosen_xml)
+
+    return xml_list[chosen_xml -1]
+
 
 def main():
     input = find_premis(sys.argv[1])
@@ -138,9 +153,9 @@ def main():
     event_dict = list_events(agent_dict, input)
     print_agents(event_dict, input)
 
-    
+
 if __name__ == '__main__':
     main()
-    
+
 
 
