@@ -4,10 +4,10 @@ import sys
 import os
 import subprocess
 
-def get_representation_info():
+def get_representation_info(input):
     print 'Human Readable Premis Report\n'
     parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(sys.argv[1],parser=parser)
+    doc         = ET.parse(input,parser=parser)
     premis      = doc.getroot()
     print '**Summary Report **\n'
     premis_namespace    = "http://www.loc.gov/premis/v3"
@@ -47,9 +47,9 @@ def get_representation_info():
                 image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
 
 
-def list_agents():
+def list_agents(input):
     parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(sys.argv[1],parser=parser)
+    doc         = ET.parse(input,parser=parser)
     premis      = doc.getroot()
     premis_namespace    = "http://www.loc.gov/premis/v3"
     all_agent_values = doc.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
@@ -59,9 +59,9 @@ def list_agents():
         #agent_dict[i.text] = doc.xpath(i.getparent().i.getparent() + '//ns:agentName',namespaces={'ns': premis_namespace})
     return agent_dict
 
-def list_events(agent_dict):
+def list_events(agent_dict, input):
     parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(sys.argv[1],parser=parser)
+    doc         = ET.parse(input,parser=parser)
     premis      = doc.getroot()
     all_descendants = list(premis.iter())
     premis_namespace    = "http://www.loc.gov/premis/v3"
@@ -85,9 +85,9 @@ def list_events(agent_dict):
 
     return event_dict
 
-def print_agents(event_dict):
+def print_agents(event_dict, input):
     parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(sys.argv[1],parser=parser)
+    doc         = ET.parse(input,parser=parser)
     premis      = doc.getroot()
     premis_namespace    = "http://www.loc.gov/premis/v3"
     all_agents = doc.xpath('//ns:agent',namespaces={'ns': premis_namespace})
@@ -100,11 +100,43 @@ def print_agents(event_dict):
              print "%-*s   : %s" % (25,'eventName',  event_dict[x.text])
         print '\n'
 
+
+def find_premis(input):
+    xml_list = []
+    for root, dirs, files in os.walk(input):
+        for filename in files:
+            if filename.endswith('.xml'):
+                parser      = ET.XMLParser(remove_blank_text=True)
+                print os.path.join(root,filename)
+                try:
+                    doc         = ET.parse(os.path.join(root,filename), parser=parser)
+                
+                    cpl_namespace = doc.xpath('namespace-uri(.)')
+                
+
+                    if cpl_namespace == "http://www.loc.gov/premis/v3":
+                
+                        xml_list.append(os.path.join(root,filename))
+                except: SyntaxError,TypeError
+    if len(xml_list) == 0:
+        print 'No PREMIS version 3 XML documents found. Exiting.'
+        sys.exit()
+    elif len(xml_list) == 1:
+        print 'returning', os.path.join(root, filename)
+        return os.path.join(root, filename)
+        
+    elif len(xml_list) > 1:
+        print 'Multiple PREMIS XML documents found:'
+        for i in xml_list:
+            print i
+            return xml_list[1]
+
 def main():
-    get_representation_info()
-    agent_dict = list_agents()
-    event_dict = list_events(agent_dict)
-    print_agents(event_dict)
+    input = find_premis(sys.argv[1])
+    get_representation_info(input)
+    agent_dict = list_agents(input)
+    event_dict = list_events(agent_dict, input)
+    print_agents(event_dict, input)
 
     
 if __name__ == '__main__':
