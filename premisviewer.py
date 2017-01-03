@@ -5,13 +5,9 @@ import sys
 import os
 import subprocess
 
-def get_representation_info(input):
+def get_representation_info(input, premis, premis_namespace):
     print 'Human Readable Premis Report\n'
-    parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(input,parser=parser)
-    premis      = doc.getroot()
     print '**Summary Report **\n'
-    premis_namespace    = "http://www.loc.gov/premis/v3"
     # some hacks in here for incorrectly formatted premis xml :((
     if premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].text =='representation':
         representation_root =  premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].getparent()
@@ -48,27 +44,17 @@ def get_representation_info(input):
                 image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
 
 
-def list_agents(input):
-    parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(input,parser=parser)
-    premis      = doc.getroot()
-    premis_namespace    = "http://www.loc.gov/premis/v3"
-    all_agent_values = doc.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
+def list_agents(input, premis, premis_namespace):
+    all_agent_values = premis.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
     agent_dict = {}
     for i in all_agent_values:
         agent_dict[i.text] = i.getparent().getparent().findtext('ns:agentName',namespaces={'ns': premis_namespace})
         #agent_dict[i.text] = doc.xpath(i.getparent().i.getparent() + '//ns:agentName',namespaces={'ns': premis_namespace})
     return agent_dict
 
-def list_events(agent_dict, input):
-    parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(input,parser=parser)
-    premis      = doc.getroot()
-    all_descendants = list(premis.iter())
-    premis_namespace    = "http://www.loc.gov/premis/v3"
-
-    all_events = doc.xpath('//ns:event',namespaces={'ns': premis_namespace})
-    all_event_uuids = doc.xpath('//ns:eventIdentifierValue',namespaces={'ns': premis_namespace})
+def list_events(agent_dict, input, premis, premis_namespace):
+    all_events = premis.xpath('//ns:event',namespaces={'ns': premis_namespace})
+    all_event_uuids = premis.xpath('//ns:eventIdentifierValue',namespaces={'ns': premis_namespace})
     event_dict = {}
     for i in all_event_uuids:
             event_dict[i.text] = i.getparent().getparent().findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace})
@@ -86,12 +72,8 @@ def list_events(agent_dict, input):
 
     return event_dict
 
-def print_agents(event_dict, input):
-    parser      = ET.XMLParser(remove_blank_text=True)
-    doc         = ET.parse(input,parser=parser)
-    premis      = doc.getroot()
-    premis_namespace    = "http://www.loc.gov/premis/v3"
-    all_agents = doc.xpath('//ns:agent',namespaces={'ns': premis_namespace})
+def print_agents(event_dict, input , premis, premis_namespace):
+    all_agents = premis.xpath('//ns:agent',namespaces={'ns': premis_namespace})
     print '\n**Agents**\n'
     for i in all_agents:
 
@@ -145,13 +127,30 @@ def choose_xml(xml_list):
 
     return xml_list[chosen_xml -1]
 
+def create_premis_object(input):
+    """Creates an lxml PREMIS object that will be analysed by other functions.
+
+    Args:
+        input: filename string that is returned from find_premis()
+    Returns:
+        premis: premis lxml object
+        premis_namespace: XML namespace for PREMIS v3.
+    """
+    parser      = ET.XMLParser(remove_blank_text=True)
+    doc         = ET.parse(input,parser=parser)
+    premis      = doc.getroot()
+    print '**Summary Report **\n'
+    premis_namespace    = "http://www.loc.gov/premis/v3"
+    return premis, premis_namespace
+
 
 def main():
     input = find_premis(sys.argv[1])
-    get_representation_info(input)
-    agent_dict = list_agents(input)
-    event_dict = list_events(agent_dict, input)
-    print_agents(event_dict, input)
+    premis, premis_namespace = create_premis_object(input)
+    get_representation_info(input,premis, premis_namespace)
+    agent_dict = list_agents(input,premis, premis_namespace)
+    event_dict = list_events(agent_dict, input,premis, premis_namespace)
+    print_agents(event_dict, input,premis, premis_namespace)
 
 
 if __name__ == '__main__':
