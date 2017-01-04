@@ -9,40 +9,44 @@ def get_representation_info(input, premis, premis_namespace):
     print 'Human Readable Premis Report\n'
     print '**Summary Report **\n'
     # some hacks in here for incorrectly formatted premis xml :((
-    if premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].text =='representation':
-        representation_root =  premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].getparent()
-        if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
-            source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
-            source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-            # hack for invalid premis docs that I'd previously created :(
-            if source_id == None:
-                source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-            print "%-*s   : %s" % (25,'has source', source_id)
-        included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
-        included_count = len (included_files)
-        format_list = []
-        included_format =  premis.xpath("//ns:formatName" ,namespaces={'ns': premis_namespace})
-        for i in included_format:
-            if i.text not in format_list:
-                format_list.append(i.text)
+    category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
+    for category in category_list:
+        if category.text =='representation':
 
-        format_dict = {}
-        for i in format_list:
-            count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % i,namespaces={'ns': premis_namespace}))
-            format_dict[i] = count
-        # http://stackoverflow.com/a/17392569
-        inputs  = ['%s: %s' % (v, k) for k, v in format_dict.items()]
-        print 'Representation includes:', ' '.join(inputs)
-        image_sequence_uuid = representation_root.xpath("ns:relationship[ns:relationshipSubType='has root']",namespaces={'ns': premis_namespace})
-        if len(image_sequence_uuid) > 0:
-            if not image_sequence_uuid[0] in ['', None]:
-                root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                if root_uuid == None:
-                    root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                print "%-*s   : %s" % (25,'image sequence root uuid',root_uuid)
-                file_format =  premis.xpath("//ns:formatName[../../../..//ns:objectIdentifierValue='%s' ]" % root_uuid,namespaces={'ns': premis_namespace})
-                image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
+            representation_root =  premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].getparent()
+            if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
+                source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
+                source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                # hack for invalid premis docs that I'd previously created :(
+                if source_id == None:
+                    source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                print "%-*s   : %s" % (25,'has source', source_id)
+            included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
+            included_count = len (included_files)
+            format_list = []
+            included_format =  premis.xpath("//ns:formatName" ,namespaces={'ns': premis_namespace})
+            for i in included_format:
+                if i.text not in format_list:
+                    format_list.append(i.text)
 
+            format_dict = {}
+            for i in format_list:
+                count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % i,namespaces={'ns': premis_namespace}))
+                format_dict[i] = count
+            # http://stackoverflow.com/a/17392569
+            inputs  = ['%s: %s' % (v, k) for k, v in format_dict.items()]
+            print 'Representation includes:', ' '.join(inputs)
+            image_sequence_uuid = representation_root.xpath("ns:relationship[ns:relationshipSubType='has root']",namespaces={'ns': premis_namespace})
+            if len(image_sequence_uuid) > 0:
+                if not image_sequence_uuid[0] in ['', None]:
+                    root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                    if root_uuid == None:
+                        root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                    print "%-*s   : %s" % (25,'image sequence root uuid',root_uuid)
+                    file_format =  premis.xpath("//ns:formatName[../../../..//ns:objectIdentifierValue='%s' ]" % root_uuid,namespaces={'ns': premis_namespace})
+                    image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
+        else:
+            continue
 
 def list_agents(input, premis, premis_namespace):
     all_agent_values = premis.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
