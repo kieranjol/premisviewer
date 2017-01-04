@@ -48,13 +48,19 @@ def get_representation_info(input, premis, premis_namespace):
         else:
             continue
 
-def get_intellectual_entity(input, premis, premis_namespace):
-    category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
+def get_ids(object_type, input, premis, premis_namespace):
+    category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
-        if category.text =='intellectual entity':
-            print '***Intellectual Entity***\n'
-            category
-            print "%-*s   : %s" % (25,'objectIdentifierType', source_id)
+        if category.text == object_type:
+            print '***%s***\n' % object_type
+            root = category.getparent()
+            identifier_list = root.xpath('ns:objectIdentifier',namespaces={'ns': premis_namespace})
+            for i in identifier_list:
+                id_tag = i.findtext('ns:objectIdentifierType',namespaces={'ns': premis_namespace})
+                id_text = i.findtext('ns:objectIdentifierValue',namespaces={'ns': premis_namespace})
+                
+                print "%-*s   : %s" % (25,'objectIdentifierType', id_tag)
+                print "%-*s   : %s" % (25,'objectIdentifierValue', id_text)
             
             
 
@@ -161,7 +167,9 @@ def create_premis_object(input):
 def main():
     input = find_premis(sys.argv[1])
     premis, premis_namespace = create_premis_object(input)
+    get_ids('intellectual entity',input, premis, premis_namespace)
     get_representation_info(input,premis, premis_namespace)
+    get_ids('representation',input, premis, premis_namespace)
     agent_dict = list_agents(input,premis, premis_namespace)
     event_dict = list_events(agent_dict, input,premis, premis_namespace)
     print_agents(event_dict, input,premis, premis_namespace)
