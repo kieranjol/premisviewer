@@ -13,7 +13,7 @@ def get_representation_info(input, premis, premis_namespace):
     for category in category_list:
         if category.text =='representation':
 
-            representation_root =  premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})[0].getparent()
+            representation_root =  category.getparent()
             if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
                 source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
                 source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
@@ -47,6 +47,16 @@ def get_representation_info(input, premis, premis_namespace):
                     image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
         else:
             continue
+
+def get_intellectual_entity(input, premis, premis_namespace):
+    category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
+    for category in category_list:
+        if category.text =='intellectual entity':
+            print '***Intellectual Entity***\n'
+            category
+            print "%-*s   : %s" % (25,'objectIdentifierType', source_id)
+            
+            
 
 def list_agents(input, premis, premis_namespace):
     all_agent_values = premis.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
