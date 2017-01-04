@@ -5,17 +5,33 @@ Usage: `premixviewer.py premis_file.xml`
 
 A report looks like this right now - more fields to come:
 
+**Summary Report **
+
+***intellectual entity***
+
+objectIdentifierType        : None
+objectIdentifierValue       : None
+objectIdentifierType        : UUID
+objectIdentifierValue       : d6ad2534-b5f0-40c9-aa9f-5ae2cfcdfc35
+objectIdentifierType        : Irish Film Archive Filmographic Database
+objectIdentifierValue       : af8841
 Human Readable Premis Report
 
 **Summary Report **
 
 Representation includes: 1: audio/vnd.wave 43: DPX
-image sequence root uuid    : 63a2435f-b9ec-4815-8890-2c24628203e5
+image sequence root uuid    : 8f5b7490-9225-4855-99aa-1fb61472d896
+***representation***
+
+objectIdentifierType        : UUID
+objectIdentifierValue       : 3c92e9d2-2e1b-4dec-8fcb-8ed21f236306
+objectIdentifierType        : Irish Film Archive Object Entry Register
+objectIdentifierValue       : oe4636
 
 **Events**
 
 eventType                   : creation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2016-09-29T10:18:25
 eventDetail                 : Audio cleanup
 agentName                   : mac mini
 agentName                   : osx
@@ -24,7 +40,7 @@ agentName                   : Brian Cash
 
 
 eventType                   : creation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2016-09-29T10:18:25
 eventDetail                 : Audio trimming and export
 agentName                   : mac mini
 agentName                   : osx
@@ -33,7 +49,7 @@ agentName                   : Brian Cash
 
 
 eventType                   : creation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2016-09-30T15:34:54
 eventDetail                 : Import to Avid and remove overscan
 agentName                   : Mac Pro
 agentName                   : osx
@@ -42,7 +58,7 @@ agentName                   : Gavin Martin
 
 
 eventType                   : creation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2016-09-30T15:34:54
 eventDetail                 : Colour Correction
 agentName                   : Mac Pro
 agentName                   : osx
@@ -51,7 +67,7 @@ agentName                   : Gavin Martin
 
 
 eventType                   : message digest calculation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2017-01-04T13:00:20
 eventDetail                 : Frame level checksums of image
 agentName                   : mac mini
 agentName                   : osx
@@ -60,7 +76,7 @@ agentName                   : Kieran O'Leary
 
 
 eventType                   : message digest calculation
-eventDate                   : 2016-12-20T12:12:32
+eventDate                   : 2017-01-04T13:00:20
 eventDetail                 : Checksum manifest for whole package created
 agentName                   : hashlib
 agentName                   : mac mini
