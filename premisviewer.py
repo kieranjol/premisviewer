@@ -6,9 +6,10 @@ import os
 import subprocess
 
 def get_representation_info(input, premis, premis_namespace):
-    print 'Human Readable Premis Report\n'
-    print '**Summary Report **\n'
+
+    print '\n**Summary Report **\n'
     # some hacks in here for incorrectly formatted premis xml :((
+    sequence = False
     category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
     for category in category_list:
         if category.text =='representation':
@@ -20,7 +21,7 @@ def get_representation_info(input, premis, premis_namespace):
                 # hack for invalid premis docs that I'd previously created :(
                 if source_id == None:
                     source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                print "%-*s   : %s" % (25,'has source', source_id)
+                print "%-*s   : %s" % (30,'has source', source_id)
             included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
             included_count = len (included_files)
             format_list = []
@@ -42,12 +43,13 @@ def get_representation_info(input, premis, premis_namespace):
                     root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
                     if root_uuid == None:
                         root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                    print "%-*s   : %s" % (25,'image sequence root uuid',root_uuid)
+                    print "%-*s   : %s" % (30,'image sequence root uuid',root_uuid)
+                    sequence = True
                     file_format =  premis.xpath("//ns:formatName[../../../..//ns:objectIdentifierValue='%s' ]" % root_uuid,namespaces={'ns': premis_namespace})
                     image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
         else:
             continue
-
+    return sequence, format_dict
 def get_ids(object_type, input, premis, premis_namespace):
     category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
@@ -58,11 +60,10 @@ def get_ids(object_type, input, premis, premis_namespace):
             for i in identifier_list:
                 id_tag = i.findtext('ns:objectIdentifierType',namespaces={'ns': premis_namespace})
                 id_text = i.findtext('ns:objectIdentifierValue',namespaces={'ns': premis_namespace})
-                
-                print "%-*s   : %s" % (25,'objectIdentifierType', id_tag)
-                print "%-*s   : %s" % (25,'objectIdentifierValue', id_text)
-            
-            
+
+                print "%-*s   : %s" % (30,'objectIdentifierType', id_tag)
+                print "%-*s   : %s" % (30,'objectIdentifierValue', id_text)
+
 
 def list_agents(input, premis, premis_namespace):
     all_agent_values = premis.xpath('//ns:agentIdentifierValue',namespaces={'ns': premis_namespace})
@@ -82,12 +83,12 @@ def list_events(agent_dict, input, premis, premis_namespace):
     print '\n**Events**\n'
     for i in all_events:
 
-         print "%-*s   : %s" % (25,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
-         print "%-*s   : %s" % (25,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
-         print "%-*s   : %s" % (25,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (30,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (30,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (30,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
          counter = 1
          for x in i.findall('ns:linkingAgentIdentifier/ns:linkingAgentIdentifierValue',namespaces={'ns': premis_namespace}):
-             print "%-*s   : %s" % (25,'agentName',  agent_dict[x.text])
+             print "%-*s   : %s" % (30,'agentName',  agent_dict[x.text])
          print '\n'
 
     return event_dict
@@ -97,11 +98,11 @@ def print_agents(event_dict, input , premis, premis_namespace):
     print '\n**Agents**\n'
     for i in all_agents:
 
-        print "%-*s   : %s" % (25,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
-        print "%-*s   : %s" % (25,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
+        print "%-*s   : %s" % (30,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
+        print "%-*s   : %s" % (30,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
         for x in i.findall('ns:linkingEventIdentifier/ns:linkingEventIdentifierValue',namespaces={'ns': premis_namespace}):
             try:
-                print "%-*s   : %s" % (25,'eventName',  event_dict[x.text])
+                print "%-*s   : %s" % (30,'eventName',  event_dict[x.text])
             except KeyError:
                 print "**ERROR - %s recorded as linked event, but the event description is not in this XML document" % x.text
         print '\n'
@@ -167,12 +168,55 @@ def create_premis_object(input):
     return premis, premis_namespace
 
 
+def pull_all_metadata(object, counter):
+
+    #object is a lxml element object that acts as your starting xpath point.
+    #counter allows for the loop to run only a certain number of times
+    all_descendants = list(object.getparent().getparent().getparent().iter())
+    blank = 'n'
+    for i in all_descendants:
+        if i.text == None:
+            if blank == 'n':
+                print '\n'
+                blank = 'y'
+        else:
+                blank = 'n'
+                print "%-*s  :  %s" % (30,i.tag.replace('{http://www.loc.gov/premis/v3}',''),  i.text)
+    return counter
+    
+    
+def get_file_level(input,premis, premis_namespace, sequence, format_dict):
+    print '\n***File Level***\n'
+    print '%d formats found' % len(format_dict)
+    if sequence == True:
+        print 'Image sequence detected, only showing information about the first image object'
+        format_type_list = premis.xpath("//ns:formatName", namespaces={'ns': premis_namespace})
+        for format_type in format_dict:
+            if format_dict[format_type] == 1:
+                for image_object in format_type_list:
+                        if image_object.text == format_type:
+
+                            pull_all_metadata(image_object, 1)
+
+            elif format_dict[format_type] > 1:
+                counter = 1
+                for image_object in format_type_list:
+                    while counter == 1:
+                        if image_object.text == format_type:
+                            print '\n******FIRST FILE IMAGE OBJECT DOCUMENTATION******\n'
+                            counter = pull_all_metadata(image_object, counter)
+                            print '\n******END OF FIRST FILE IMAGE OBJECT DOCUMENTATION******\n'
+                            counter += 1
+
+
 def main():
     input = find_premis(sys.argv[1])
+    print 'Human Readable Premis Report\n'
     premis, premis_namespace = create_premis_object(input)
     get_ids('intellectual entity',input, premis, premis_namespace)
-    get_representation_info(input,premis, premis_namespace)
+    sequence, format_dict = get_representation_info(input,premis, premis_namespace)
     get_ids('representation',input, premis, premis_namespace)
+    get_file_level(input,premis, premis_namespace, sequence, format_dict)
     agent_dict = list_agents(input,premis, premis_namespace)
     event_dict = list_events(agent_dict, input,premis, premis_namespace)
     print_agents(event_dict, input,premis, premis_namespace)
@@ -180,6 +224,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
