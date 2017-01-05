@@ -13,7 +13,6 @@ def get_representation_info(input, premis, premis_namespace):
     category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
     for category in category_list:
         if category.text =='representation':
-
             representation_root =  category.getparent()
             if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
                 source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
@@ -23,20 +22,20 @@ def get_representation_info(input, premis, premis_namespace):
                     source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
                 print "%-*s   : %s" % (30,'has source', source_id)
             included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
-            included_count = len (included_files)
             format_list = []
             included_format =  premis.xpath("//ns:formatName" ,namespaces={'ns': premis_namespace})
             for i in included_format:
                 if i.text not in format_list:
                     format_list.append(i.text)
 
-            format_dict = {}
+            image_list, audio_list = link_uuids_to_formats(input, premis, premis_namespace, format_list)
+            format_dict= {}
             for i in format_list:
                 count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % i,namespaces={'ns': premis_namespace}))
                 format_dict[i] = count
             # http://stackoverflow.com/a/17392569
-            inputs  = ['%s: %s' % (v, k) for k, v in format_dict.items()]
-            print 'Representation includes:', ' '.join(inputs)
+            inputs  = ['%s: %s\n                        ' % (v, k) for v, k in format_dict.items()]
+            print '\nRepresentation includes:', ' '.join(inputs)
             image_sequence_uuid = representation_root.xpath("ns:relationship[ns:relationshipSubType='has root']",namespaces={'ns': premis_namespace})
             if len(image_sequence_uuid) > 0:
                 if not image_sequence_uuid[0] in ['', None]:
@@ -49,12 +48,12 @@ def get_representation_info(input, premis, premis_namespace):
                     image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
         else:
             continue
-    return sequence, format_dict
+    return sequence, format_dict, image_list, audio_list, root_uuid
 def get_ids(object_type, input, premis, premis_namespace):
     category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
         if category.text == object_type:
-            print '***%s***\n' % object_type
+            print '\n***%s***\n' % object_type
             root = category.getparent()
             identifier_list = root.xpath('ns:objectIdentifier',namespaces={'ns': premis_namespace})
             for i in identifier_list:
@@ -73,7 +72,8 @@ def list_agents(input, premis, premis_namespace):
         #agent_dict[i.text] = doc.xpath(i.getparent().i.getparent() + '//ns:agentName',namespaces={'ns': premis_namespace})
     return agent_dict
 
-def list_events(agent_dict, input, premis, premis_namespace):
+def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_list, root_uuid):
+    # event_dict is used as a lookup refrence for list_agents
     all_events = premis.xpath('//ns:event',namespaces={'ns': premis_namespace})
     all_event_uuids = premis.xpath('//ns:eventIdentifierValue',namespaces={'ns': premis_namespace})
     event_dict = {}
@@ -89,9 +89,39 @@ def list_events(agent_dict, input, premis, premis_namespace):
          counter = 1
          for x in i.findall('ns:linkingAgentIdentifier/ns:linkingAgentIdentifierValue',namespaces={'ns': premis_namespace}):
              print "%-*s   : %s" % (30,'agentName',  agent_dict[x.text])
+         linkingobjects = i.findall('.//ns:linkingObjectIdentifierValue',namespaces={'ns': premis_namespace})
+         objectlist = []
+
+         for objects in linkingobjects:
+             objectlist.append(objects.text)
+
+         if sorted(objectlist) == sorted(image_list):
+             print "%-*s   : %s" % (30,'linkingObjectIdentifier',  'Entire Image Sequence - UUID of root : %s' % root_uuid)
          print '\n'
 
     return event_dict
+def link_uuids_to_formats(input, premis, premis_namespace, format_list):
+    format_uuid = {}
+    objectlist1 = []
+    objectlist2 = []
+    all_formats = premis.xpath("//ns:objectIdentifierValue[..//ns:objectIdentifierType='UUID']" ,namespaces={'ns': premis_namespace})
+    for i in all_formats:
+        format_uuid[i.text] = i.findtext('../..//ns:formatName',namespaces={'ns': premis_namespace})
+    for x in format_uuid:
+        if format_uuid[x] == format_list[0]:
+
+            objectlist1.append(x)
+        elif format_uuid[x] ==  format_list[1]:
+            objectlist2.append(x)
+    # I'm making an assumption that there will be more dpx/tiff files than audio files.
+    if len(objectlist1) > len(objectlist2):
+        image_list = objectlist1
+        audio_list = objectlist2
+    elif len(objectlist2) > len(objectlist1):
+        image_list = objectlist2
+        audio_list = objectlist1
+    return image_list, audio_list
+
 
 def print_agents(event_dict, input , premis, premis_namespace):
     all_agents = premis.xpath('//ns:agent',namespaces={'ns': premis_namespace})
@@ -163,7 +193,6 @@ def create_premis_object(input):
     parser      = ET.XMLParser(remove_blank_text=True)
     doc         = ET.parse(input,parser=parser)
     premis      = doc.getroot()
-    print '**Summary Report **\n'
     premis_namespace    = "http://www.loc.gov/premis/v3"
     return premis, premis_namespace
 
@@ -183,8 +212,8 @@ def pull_all_metadata(object, counter):
                 blank = 'n'
                 print "%-*s  :  %s" % (30,i.tag.replace('{http://www.loc.gov/premis/v3}',''),  i.text)
     return counter
-    
-    
+
+
 def get_file_level(input,premis, premis_namespace, sequence, format_dict):
     print '\n***File Level***\n'
     print '%d formats found' % len(format_dict)
@@ -214,11 +243,12 @@ def main():
     print 'Human Readable Premis Report\n'
     premis, premis_namespace = create_premis_object(input)
     get_ids('intellectual entity',input, premis, premis_namespace)
-    sequence, format_dict = get_representation_info(input,premis, premis_namespace)
+    sequence, format_dict, image_list, audio_list, root_uuid = get_representation_info(input,premis, premis_namespace)
     get_ids('representation',input, premis, premis_namespace)
     get_file_level(input,premis, premis_namespace, sequence, format_dict)
+
     agent_dict = list_agents(input,premis, premis_namespace)
-    event_dict = list_events(agent_dict, input,premis, premis_namespace)
+    event_dict = list_events(agent_dict, input,premis, premis_namespace, image_list, audio_list, root_uuid)
     print_agents(event_dict, input,premis, premis_namespace)
 
 
