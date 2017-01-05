@@ -100,7 +100,10 @@ def print_agents(event_dict, input , premis, premis_namespace):
         print "%-*s   : %s" % (25,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
         print "%-*s   : %s" % (25,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
         for x in i.findall('ns:linkingEventIdentifier/ns:linkingEventIdentifierValue',namespaces={'ns': premis_namespace}):
-             print "%-*s   : %s" % (25,'eventName',  event_dict[x.text])
+            try:
+                print "%-*s   : %s" % (25,'eventName',  event_dict[x.text])
+            except KeyError:
+                print "**ERROR - %s recorded as linked event, but the event description is not in this XML document" % x.text
         print '\n'
 
 
