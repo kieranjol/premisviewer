@@ -14,6 +14,7 @@ def get_representation_info(input, premis, premis_namespace):
     for category in category_list:
         if category.text =='representation':
             representation_root =  category.getparent()
+            representation_uuid = representation_root.xpath("ns:objectIdentifier/ns:objectIdentifierValue[../ns:objectIdentifierType='UUID']",namespaces={'ns': premis_namespace})[0].text
             if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
                 source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
                 source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
@@ -48,7 +49,7 @@ def get_representation_info(input, premis, premis_namespace):
                     image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
         else:
             continue
-    return sequence, format_dict, image_list, audio_list, root_uuid
+    return sequence, format_dict, image_list, audio_list, root_uuid, representation_uuid
 def get_ids(object_type, input, premis, premis_namespace):
     category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
@@ -72,7 +73,7 @@ def list_agents(input, premis, premis_namespace):
         #agent_dict[i.text] = doc.xpath(i.getparent().i.getparent() + '//ns:agentName',namespaces={'ns': premis_namespace})
     return agent_dict
 
-def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_list, root_uuid):
+def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_list, root_uuid, representation_uuid):
     # event_dict is used as a lookup refrence for list_agents
     all_events = premis.xpath('//ns:event',namespaces={'ns': premis_namespace})
     all_event_uuids = premis.xpath('//ns:eventIdentifierValue',namespaces={'ns': premis_namespace})
@@ -97,6 +98,11 @@ def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_l
 
          if sorted(objectlist) == sorted(image_list):
              print "%-*s   : %s" % (30,'linkingObjectIdentifier',  'Entire Image Sequence - UUID of root : %s' % root_uuid)
+         elif sorted(objectlist) == sorted(audio_list):
+             print "%-*s   : %s" % (30,'linkingObjectIdentifier',  'Audio file with UUID : %s' % audio_list[0])
+         elif sorted(objectlist)[0] == representation_uuid:
+
+             print "%-*s   : %s" % (30,'linkingObjectIdentifier',  'Entire representation with UUID : %s' % representation_uuid)
          print '\n'
 
     return event_dict
@@ -243,12 +249,12 @@ def main():
     print 'Human Readable Premis Report\n'
     premis, premis_namespace = create_premis_object(input)
     get_ids('intellectual entity',input, premis, premis_namespace)
-    sequence, format_dict, image_list, audio_list, root_uuid = get_representation_info(input,premis, premis_namespace)
+    sequence, format_dict, image_list, audio_list, root_uuid, representation_uuid = get_representation_info(input,premis, premis_namespace)
     get_ids('representation',input, premis, premis_namespace)
     get_file_level(input,premis, premis_namespace, sequence, format_dict)
 
     agent_dict = list_agents(input,premis, premis_namespace)
-    event_dict = list_events(agent_dict, input,premis, premis_namespace, image_list, audio_list, root_uuid)
+    event_dict = list_events(agent_dict, input,premis, premis_namespace, image_list, audio_list, root_uuid, representation_uuid)
     print_agents(event_dict, input,premis, premis_namespace)
 
 
