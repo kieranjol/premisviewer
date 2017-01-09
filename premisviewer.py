@@ -7,21 +7,26 @@ import subprocess
 
 def get_representation_info(input, premis, premis_namespace):
 
-    print '\n**Summary Report **\n'
     # some hacks in here for incorrectly formatted premis xml :((
     sequence = False
     category_list = premis.xpath('//ns:objectCategory',namespaces={'ns': premis_namespace})
+    root_uuid = ''
     for category in category_list:
         if category.text =='representation':
             representation_root =  category.getparent()
-            representation_uuid = representation_root.xpath("ns:objectIdentifier/ns:objectIdentifierValue[../ns:objectIdentifierType='UUID']",namespaces={'ns': premis_namespace})[0].text
-            if representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].text == 'has source':
-                source_relationship_root = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})[0].getparent()
-                source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                # hack for invalid premis docs that I'd previously created :(
-                if source_id == None:
-                    source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                print "%-*s   : %s" % (30,'has source', source_id)
+            representation_uuid = representation_root.xpath(".//ns:objectIdentifier/ns:objectIdentifierValue[../ns:objectIdentifierType='UUID']",namespaces={'ns': premis_namespace})[0].text
+            relationship_subtypes = representation_root.xpath('//ns:relationshipSubType',namespaces={'ns': premis_namespace})
+            for subtype in relationship_subtypes:
+                if subtype.text == 'has source':
+                    source_id =  subtype.findtext('../ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                    source_id_type = subtype.findtext('../ns:relatedObjectIdentifier/ns:relatedObjectIdentifierType',namespaces={'ns': premis_namespace})
+                    # hack for invalid premis docs that I'd previously created :(
+                    if source_id == None:
+                        source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
+                    print "%-*s   : %s" % (30,'relationshipType', 'derivation')
+                    print "%-*s   : %s" % (30,'relationshipSubType', 'has source')
+                    print "%-*s   : %s" % (30,'objectIdentifierType', source_id_type)
+                    print "%-*s   : %s" % (30,'objectIdentifierValue', source_id)
             included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
             format_list = []
             included_format =  premis.xpath("//ns:formatName" ,namespaces={'ns': premis_namespace})
@@ -35,8 +40,10 @@ def get_representation_info(input, premis, premis_namespace):
                 count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % i,namespaces={'ns': premis_namespace}))
                 format_dict[i] = count
             # http://stackoverflow.com/a/17392569
-            inputs  = ['%s: %s\n                        ' % (v, k) for v, k in format_dict.items()]
-            print '\nRepresentation includes:', ' '.join(inputs)
+            inputs  = ["%-*s   : %s, %s" % (30,'includes',v, k) for v, k in format_dict.items()]
+            print '***'
+            for f in inputs:
+                print f
             image_sequence_uuid = representation_root.xpath("ns:relationship[ns:relationshipSubType='has root']",namespaces={'ns': premis_namespace})
             if len(image_sequence_uuid) > 0:
                 if not image_sequence_uuid[0] in ['', None]:
@@ -54,7 +61,7 @@ def get_ids(object_type, input, premis, premis_namespace):
     category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
         if category.text == object_type:
-            print '\n***%s***\n' % object_type
+            print "%-*s   : %s" % (30,'objectCategory', object_type)
             root = category.getparent()
             identifier_list = root.xpath('ns:objectIdentifier',namespaces={'ns': premis_namespace})
             for i in identifier_list:
@@ -63,6 +70,7 @@ def get_ids(object_type, input, premis, premis_namespace):
 
                 print "%-*s   : %s" % (30,'objectIdentifierType', id_tag)
                 print "%-*s   : %s" % (30,'objectIdentifierValue', id_text)
+            print '\n***'
 
 
 def list_agents(input, premis, premis_namespace):
@@ -117,8 +125,11 @@ def link_uuids_to_formats(input, premis, premis_namespace, format_list):
         if format_uuid[x] == format_list[0]:
 
             objectlist1.append(x)
-        elif format_uuid[x] ==  format_list[1]:
-            objectlist2.append(x)
+        elif len(format_list) > 1:
+            if format_uuid[x] ==  format_list[1]:
+                objectlist2.append(x)
+        else:
+            return objectlist1, objectlist2
     # I'm making an assumption that there will be more dpx/tiff files than audio files.
     if len(objectlist1) > len(objectlist2):
         image_list = objectlist1
@@ -221,10 +232,10 @@ def pull_all_metadata(object, counter):
 
 
 def get_file_level(input,premis, premis_namespace, sequence, format_dict):
-    print '\n***File Level***\n'
-    print '%d formats found' % len(format_dict)
+    print '***'
+    print "\n\n%-*s   : %s" % (30,'objectCategory',  'file')
     if sequence == True:
-        print 'Image sequence detected, only showing information about the first image object'
+
         format_type_list = premis.xpath("//ns:formatName", namespaces={'ns': premis_namespace})
         for format_type in format_dict:
             if format_dict[format_type] == 1:
@@ -234,6 +245,7 @@ def get_file_level(input,premis, premis_namespace, sequence, format_dict):
                             pull_all_metadata(image_object, 1)
 
             elif format_dict[format_type] > 1:
+                print 'Image sequence detected, only showing information about the first image object'
                 counter = 1
                 for image_object in format_type_list:
                     while counter == 1:
@@ -249,10 +261,9 @@ def main():
     print 'Human Readable Premis Report\n'
     premis, premis_namespace = create_premis_object(input)
     get_ids('intellectual entity',input, premis, premis_namespace)
-    sequence, format_dict, image_list, audio_list, root_uuid, representation_uuid = get_representation_info(input,premis, premis_namespace)
     get_ids('representation',input, premis, premis_namespace)
+    sequence, format_dict, image_list, audio_list, root_uuid, representation_uuid = get_representation_info(input,premis, premis_namespace)
     get_file_level(input,premis, premis_namespace, sequence, format_dict)
-
     agent_dict = list_agents(input,premis, premis_namespace)
     event_dict = list_events(agent_dict, input,premis, premis_namespace, image_list, audio_list, root_uuid, representation_uuid)
     print_agents(event_dict, input,premis, premis_namespace)
