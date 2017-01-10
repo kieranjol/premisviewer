@@ -179,13 +179,14 @@ def find_premis(input):
                         cpl_namespace = doc.xpath('namespace-uri(.)')
                         if cpl_namespace == "http://www.loc.gov/premis/v3":
                             xml_list.append(os.path.join(root,filename))
-                    except: SyntaxError,TypeError
+                    except SyntaxError,TypeError:
+                        continue
         if len(xml_list) == 0:
             print 'No PREMIS version 3 XML documents found. Exiting.'
             sys.exit()
         elif len(xml_list) == 1:
             print 'returning', os.path.join(root, filename)
-            return os.path.join(root, filename)
+            return xml_list[0]
 
         elif len(xml_list) > 1:
             try:
