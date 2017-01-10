@@ -4,6 +4,7 @@ import lxml.etree as ET
 import sys
 import os
 import subprocess
+import argparse
 
 def get_representation_info(input, premis, premis_namespace):
 
@@ -24,9 +25,9 @@ def get_representation_info(input, premis, premis_namespace):
                     if source_id == None:
                         source_id =  source_relationship_root.findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
                     print "%-*s   : %s" % (30,'relationshipType', 'derivation')
-                    print "%-*s   : %s" % (30,'relationshipSubType', 'has source')
-                    print "%-*s   : %s" % (30,'objectIdentifierType', source_id_type)
-                    print "%-*s   : %s" % (30,'objectIdentifierValue', source_id)
+                    print "%-*s   : %s" % (35,'relationshipSubType', 'has source')
+                    print "%-*s   : %s" % (35,'objectIdentifierType', source_id_type)
+                    print "%-*s   : %s" % (35,'objectIdentifierValue', source_id)
             included_files = representation_root.xpath("ns:relationship[ns:relationshipSubType='includes']",namespaces={'ns': premis_namespace})
             format_list = []
             included_format =  premis.xpath("//ns:formatName" ,namespaces={'ns': premis_namespace})
@@ -40,7 +41,7 @@ def get_representation_info(input, premis, premis_namespace):
                 count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % i,namespaces={'ns': premis_namespace}))
                 format_dict[i] = count
             # http://stackoverflow.com/a/17392569
-            inputs  = ["%-*s   : %s, %s" % (30,'includes',v, k) for v, k in format_dict.items()]
+            inputs  = ["%-*s   : %s \n%-*s   : %s\n%-*s   : %s, %s" % (30,'relationshipType','structural',35,'relationshipSubType','includes', 35,'*Values',v, k) for v, k in format_dict.items()]
             print '***'
             for f in inputs:
                 print f
@@ -50,13 +51,18 @@ def get_representation_info(input, premis, premis_namespace):
                     root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifier/ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
                     if root_uuid == None:
                         root_uuid = image_sequence_uuid[0].findtext('ns:relatedObjectIdentifierValue',namespaces={'ns': premis_namespace})
-                    print "%-*s   : %s" % (30,'image sequence root uuid',root_uuid)
+                    print "%-*s   : %s" % (30,'relationshipType','structural')
+                    print "%-*s   : %s" % (35,'relationshipSubType','has root')
+                    print "%-*s   : %s" % (35,'objectIdentifierType','UUID')
+                    print "%-*s   : %s" % (35,'objectIdentifierValue',root_uuid)
                     sequence = True
                     file_format =  premis.xpath("//ns:formatName[../../../..//ns:objectIdentifierValue='%s' ]" % root_uuid,namespaces={'ns': premis_namespace})
                     image_count =  len(premis.xpath("//ns:formatDesignation[ns:formatName='%s' ]" % file_format[0].text,namespaces={'ns': premis_namespace}))
         else:
             continue
     return sequence, format_dict, image_list, audio_list, root_uuid, representation_uuid
+
+
 def get_ids(object_type, input, premis, premis_namespace):
     category_list = premis.xpath("//ns:objectCategory", namespaces={'ns': premis_namespace})
     for category in category_list:
@@ -67,9 +73,11 @@ def get_ids(object_type, input, premis, premis_namespace):
             for i in identifier_list:
                 id_tag = i.findtext('ns:objectIdentifierType',namespaces={'ns': premis_namespace})
                 id_text = i.findtext('ns:objectIdentifierValue',namespaces={'ns': premis_namespace})
-
-                print "%-*s   : %s" % (30,'objectIdentifierType', id_tag)
-                print "%-*s   : %s" % (30,'objectIdentifierValue', id_text)
+                if args.hx:
+                    print "%-*s   : %s" % (30,id_tag, id_text)
+                else:
+                    print "%-*s   : %s" % (30,'objectIdentifierType', id_tag)
+                    print "%-*s   : %s" % (30,'objectIdentifierValue', id_text)
             print '\n***'
 
 
@@ -91,7 +99,8 @@ def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_l
     blank = 'n'
     print '\n**Events**\n'
     for i in all_events:
-
+         print "%-*s   : %s" % (30,'eventIdentifierType',  i.findtext('ns:eventIdentifier/ns:eventIdentifierType',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (30,'eventIdentifierValue',  i.findtext('ns:eventIdentifier/ns:eventIdentifierValue',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
@@ -144,7 +153,8 @@ def print_agents(event_dict, input , premis, premis_namespace):
     all_agents = premis.xpath('//ns:agent',namespaces={'ns': premis_namespace})
     print '\n**Agents**\n'
     for i in all_agents:
-
+        print "%-*s   : %s" % (30,'agentIdentifierType',  i.findtext('ns:agentIdentifier/ns:agentIdentifierType',namespaces={'ns': premis_namespace}))
+        print "%-*s   : %s" % (30,'agentIdentifierValue',  i.findtext('ns:agentIdentifier/ns:agentIdentifierValue',namespaces={'ns': premis_namespace}))
         print "%-*s   : %s" % (30,'agentName',  i.findtext('ns:agentName',namespaces={'ns': premis_namespace}))
         print "%-*s   : %s" % (30,'agentType',  i.findtext('ns:agentType',namespaces={'ns': premis_namespace}))
         for x in i.findall('ns:linkingEventIdentifier/ns:linkingEventIdentifierValue',namespaces={'ns': premis_namespace}):
@@ -255,9 +265,19 @@ def get_file_level(input,premis, premis_namespace, sequence, format_dict):
                             print '\n******END OF FIRST FILE IMAGE OBJECT DOCUMENTATION******\n'
                             counter += 1
 
-
+def make_parser():
+    parser = argparse.ArgumentParser(description='Human Readable output generator for PREMIS v3 XML'
+                                'Accepts a XML file or a directory. '
+                                'Designed for IFI Irish Film Archive XML files but should work with any PREMIS v3 XML. '
+                                'Written by Kieran O\'Leary.')
+    parser.add_argument('input', help='file path of parent directory')
+    parser.add_argument('-hx', action='store_true', help='Less verbose, more human friendly output')
+    return parser
 def main():
-    input = find_premis(sys.argv[1])
+    global args
+    parser = make_parser()
+    args = parser.parse_args()
+    input = find_premis(args.input)
     print 'Human Readable Premis Report\n'
     premis, premis_namespace = create_premis_object(input)
     get_ids('intellectual entity',input, premis, premis_namespace)
