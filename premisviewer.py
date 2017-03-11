@@ -226,7 +226,6 @@ def create_premis_object(input):
 
 
 def pull_all_metadata(object, counter):
-
     #object is a lxml element object that acts as your starting xpath point.
     #counter allows for the loop to run only a certain number of times
     all_descendants = list(object.getparent().getparent().getparent().iter())
@@ -252,7 +251,6 @@ def get_file_level(input,premis, premis_namespace, sequence, format_dict):
             if format_dict[format_type] == 1:
                 for image_object in format_type_list:
                         if image_object.text == format_type:
-
                             pull_all_metadata(image_object, 1)
 
             elif format_dict[format_type] > 1:
@@ -265,7 +263,8 @@ def get_file_level(input,premis, premis_namespace, sequence, format_dict):
                             counter = pull_all_metadata(image_object, counter)
                             print '\n******END OF FIRST FILE IMAGE OBJECT DOCUMENTATION******\n'
                             counter += 1
-
+    else:
+        pull_all_metadata(premis.xpath("//ns:formatName", namespaces={'ns': premis_namespace})[0], 1)
 def make_parser():
     parser = argparse.ArgumentParser(description='Human Readable output generator for PREMIS v3 XML'
                                 'Accepts a XML file or a directory. '
