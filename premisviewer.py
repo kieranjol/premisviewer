@@ -102,7 +102,7 @@ def list_events(agent_dict, input, premis, premis_namespace, image_list, audio_l
          print "%-*s   : %s" % (30,'eventIdentifierType',  i.findtext('ns:eventIdentifier/ns:eventIdentifierType',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventIdentifierValue',  i.findtext('ns:eventIdentifier/ns:eventIdentifierValue',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventType',  i.findtext('ns:eventType',namespaces={'ns': premis_namespace}))
-         print "%-*s   : %s" % (30,'eventDate',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
+         print "%-*s   : %s" % (30,'eventDateTime',  i.findtext('ns:eventDateTime',namespaces={'ns': premis_namespace}))
          print "%-*s   : %s" % (30,'eventDetail',  i.findtext('ns:eventDetailInformation/ns:eventDetail',namespaces={'ns': premis_namespace}))
          counter = 1
          for x in i.findall('ns:linkingAgentIdentifier/ns:linkingAgentIdentifierValue',namespaces={'ns': premis_namespace}):
