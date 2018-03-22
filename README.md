@@ -1,10 +1,12 @@
 # premisviewer
+
 Transforms PREMIS XML into a human readable report via python/lxml
 Proof of concept with much more work to be done
 Usage: `premixviewer.py premis_file.xml`
 
 A report looks like this right now - more fields to come:
 
+```
 Human Readable Premis Report
 
 **Summary Report **
@@ -371,3 +373,4 @@ eventName                        : Colour Correction
 agentName                        : iZotope Rx5
 agentType                        : software
 eventName                        : Audio cleanup
+```
